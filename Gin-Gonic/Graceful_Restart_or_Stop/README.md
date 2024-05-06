@@ -9,6 +9,6 @@ http 서버를 종료할 때, Graceful 하게 종료해야 할 필요가 있음.
 - Goroutines
 - Context
 
-위 내용은 Test/Hello_Multi_Goroutines_with_Context 를 참고
+위 내용 테스트 한 것은 Test/Hello_Multi_Goroutines_with_Context 를 참고
 
 
