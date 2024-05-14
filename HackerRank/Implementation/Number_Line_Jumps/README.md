@@ -25,3 +25,5 @@
 - (x2 - x1) % (v1 - v2) = 0
 
 그렇기에, 위 2가지 조건을 만족하면 두 마리의 캥거루는 언젠가 같은 위치에 도달할 것임.
+
+Problem : https://www.hackerrank.com/challenges/kangaroo/problem?isFullScreen=true
