@@ -21,4 +21,6 @@ COPY --from=builder /app/main .
 RUN chown -R go:root /app && \
     chmod -R 755 /app/main
 
+USER 185
+
 ENTRYPOINT ["./main"]
