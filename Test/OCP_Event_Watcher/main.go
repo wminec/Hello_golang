@@ -68,22 +68,22 @@ func main() {
 	)
 
 	eventHandler := cache.ResourceEventHandlerFuncs{
-		AddFunc:    handleEvent,
-		UpdateFunc: func(oldObj, newObj interface{}) { handleEvent(newObj) },
-		DeleteFunc: handleEvent,
+		AddFunc: handleEvent,
 	}
 
-	_, controller := cache.NewInformer(
+	informer := cache.NewSharedIndexInformer(
 		watchlist,
 		&v1.Event{},
-		0,
-		eventHandler,
+		0, // No resync period
+		cache.Indexers{},
 	)
+
+	informer.AddEventHandler(eventHandler)
 
 	stop := make(chan struct{})
 	defer close(stop)
 
-	go controller.Run(stop)
+	go informer.Run(stop)
 
 	// Handle graceful shutdown
 	sigterm := make(chan os.Signal, 1)
