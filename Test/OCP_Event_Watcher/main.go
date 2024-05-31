@@ -6,10 +6,11 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
-	"path/filepath"
-
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -63,23 +64,24 @@ func main() {
 		clientset.CoreV1().RESTClient(),
 		"events",
 		namespace,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: handleEvent,
-			UpdateFunc: func(oldObj, newObj interface{}) {
-				handleEvent(newObj)
-			},
-			DeleteFunc: handleEvent,
-		},
+		fields.Everything(),
+	)
+
+	eventHandler := cache.ResourceEventHandlerFuncs{
+		AddFunc:    handleEvent,
+		UpdateFunc: func(oldObj, newObj interface{}) { handleEvent(newObj) },
+		DeleteFunc: handleEvent,
+	}
+
+	_, controller := cache.NewInformer(
+		watchlist,
+		&v1.Event{},
+		0,
+		eventHandler,
 	)
 
 	stop := make(chan struct{})
 	defer close(stop)
-
-	_, controller := cache.NewSharedInformer(
-		watchlist,
-		&v1.Event{},
-		0,
-	)
 
 	go controller.Run(stop)
 
