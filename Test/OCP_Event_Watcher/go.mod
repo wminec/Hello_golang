@@ -1,4 +1,4 @@
-module ocp-event/hello
+module ocp-watcher/hello
 
 go 1.22.2
 

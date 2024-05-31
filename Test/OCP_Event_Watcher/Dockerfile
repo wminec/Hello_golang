@@ -11,7 +11,12 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
 
 FROM alpine:latest
 
-WORKDIR /root/
+RUN useradd -u 185 -g 0 -d /home/go -s /sbin/nologin go && \
+    mkdir -p /app/main && \
+    chown -R go:root /app/main && \
+    chmod -R 775 /app
+
+WORKDIR /app/main
 
 COPY --from=builder /app/main .
 
