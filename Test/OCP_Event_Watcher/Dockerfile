@@ -2,16 +2,17 @@ FROM golang:1.22 as builder
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+#COPY go.mod go.sum ./
+COPY . .
 RUN go mod download
 
-COPY . .
+
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
 
 FROM alpine:latest
 
-RUN adduser -u 185 -g 0 -d /home/go -s /sbin/nologin go && \
+RUN adduser -u 185 -g 0 -h /home/go -s /sbin/nologin go && \
     mkdir -p /app/main
 
 WORKDIR /app/main
