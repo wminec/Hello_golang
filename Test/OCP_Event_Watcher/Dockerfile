@@ -12,7 +12,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
 
 FROM alpine:latest
 
-RUN adduser -u 185 -g 0 -h /home/go -s /sbin/nologin go && \
+RUN adduser -u 185 -G 0 -h /home/go -s /sbin/nologin -D go && \
     mkdir -p /app/main
 
 WORKDIR /app/main
