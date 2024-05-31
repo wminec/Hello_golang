@@ -1,23 +1,37 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
+	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 )
+
+var startTime = time.Now()
+
+// handleEvent는 Kubernetes 이벤트를 처리하고 출력합니다.
+func handleEvent(obj interface{}) {
+	event, ok := obj.(*v1.Event)
+	if !ok {
+		log.Println("Error casting to event")
+		return
+	}
+	if event.CreationTimestamp.Time.After(startTime) {
+		fmt.Printf("Event: %s %s %s\n", event.InvolvedObject.Kind, event.InvolvedObject.Name, event.Message)
+	}
+}
 
 func main() {
 	// In-cluster configuration
@@ -50,30 +64,34 @@ func main() {
 		namespace = "default"
 	}
 
-	informer := cache.NewSharedIndexInformer(
-		&cache.ListWatch{
-			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				return clientset.CoreV1().Events(namespace).List(context.TODO(), options)
-			},
-			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return clientset.CoreV1().Events(namespace).Watch(context.TODO(), options)
-			},
-		},
-		&corev1.Event{},
-		0,
-		cache.Indexers{},
+	// Event watcher
+	watchlist := cache.NewListWatchFromClient(
+		clientset.CoreV1().RESTClient(),
+		"events",
+		namespace,
+		fields.Everything(),
 	)
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			event := obj.(*corev1.Event)
-			if event.InvolvedObject.Kind == "Pod" && event.Reason == "Started" {
-				fmt.Printf("Event: %v\n", event.Message)
-			}
-		},
-	})
+	eventHandler := cache.ResourceEventHandlerFuncs{
+		AddFunc:    handleEvent,
+		UpdateFunc: func(oldObj, newObj interface{}) { handleEvent(newObj) },
+		DeleteFunc: handleEvent,
+	}
+
+	_, controller := cache.NewInformer(
+		watchlist,
+		&v1.Event{},
+		0,
+		eventHandler,
+	)
 
 	stop := make(chan struct{})
 	defer close(stop)
-	informer.Run(stop)
+
+	go controller.Run(stop)
+
+	// Handle graceful shutdown
+	sigterm := make(chan os.Signal, 1)
+	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
+	<-sigterm
 }
