@@ -33,7 +33,7 @@ func handlePodEvent(obj interface{}) {
 		return
 	}
 	if pod.CreationTimestamp.Time.After(startTime) && (pod.Status.Phase == v1.PodFailed || pod.Status.Phase == v1.PodSucceeded || pod.Status.Phase == v1.PodRunning) {
-		fmt.Printf("%s Pod: %s Status: %s\n", pod.Status.StartTime, pod.Name, pod.Status.Phase)
+		fmt.Printf("%s %s, %s\n", pod.Status.StartTime, pod.Name, pod.Status.Phase)
 	}
 }
 
