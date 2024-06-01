@@ -101,8 +101,8 @@ func main() {
 	}
 
 	eventHandler := cache.ResourceEventHandlerFuncs{
-		AddFunc:    handlePodEvent,
-		UpdateFunc: func(oldObj, newObj interface{}) { handlePodEvent(newObj) },
+		AddFunc: handlePodEvent,
+		//UpdateFunc: func(oldObj, newObj interface{}) { handlePodEvent(newObj) },
 	}
 
 	_, controller := cache.NewInformer(
