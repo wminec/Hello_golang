@@ -97,10 +97,10 @@ func main() {
 	defer close(stop)
 
 	go func() {
-		controller.Run(stop)
 		// Set the start time after the controller has started running
 		startTime = time.Now()
 		fmt.Printf("Start time: %s\n", startTime)
+		controller.Run(stop)
 	}()
 
 	// Handle graceful shutdown
