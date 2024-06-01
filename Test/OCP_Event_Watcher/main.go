@@ -100,6 +100,7 @@ func main() {
 		controller.Run(stop)
 		// Set the start time after the controller has started running
 		startTime = time.Now()
+		fmt.Printf("Start time: %s\n", startTime)
 	}()
 
 	// Handle graceful shutdown
