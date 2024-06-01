@@ -1,7 +1,8 @@
-# TODO
-1. Validation
-2. Test
+# OCP Event Watcher
+This app collects events occurring in a specific namespace and outputs them to stdout.
 
-# TODO2
-1. integration with gmail
-2. integration with slack
+The following environment variables must be set:
+1. NAMESPACE : namespace what collects events
+
+The following permissions are required:
+* "get, watch, list" on events object
