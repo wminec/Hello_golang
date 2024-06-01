@@ -69,23 +69,9 @@ func main() {
 	}
 
 	labelKeys := os.Getenv("LABEL_KEYS")
-	if labelKeys == "" {
-		log.Fatalf("LABEL_KEYS environment variable not set")
-	}
-
-	keys := strings.Split(labelKeys, ",")
-
-	selector := labels.NewSelector()
-	for _, key := range keys {
-		req, err := labels.NewRequirement(key, selection.Exists, nil)
-		if err != nil {
-			log.Fatalf("Failed to create requirement: %v", err)
-		}
-		selector = selector.Add(*req)
-	}
 
 	var watchlist cache.ListerWatcher
-	if len(keys) > 0 {
+	if labelKeys == "" {
 		watchlist = cache.NewListWatchFromClient(
 			clientset.CoreV1().RESTClient(),
 			"pods",
@@ -93,6 +79,17 @@ func main() {
 			fields.Everything(),
 		)
 	} else {
+		keys := strings.Split(labelKeys, ",")
+
+		selector := labels.NewSelector()
+		for _, key := range keys {
+			req, err := labels.NewRequirement(key, selection.Exists, nil)
+			if err != nil {
+				log.Fatalf("Failed to create requirement: %v", err)
+			}
+			selector = selector.Add(*req)
+		}
+
 		watchlist = cache.NewFilteredListWatchFromClient(
 			clientset.CoreV1().RESTClient(),
 			"pods",
@@ -110,7 +107,7 @@ func main() {
 
 	_, controller := cache.NewInformer(
 		watchlist,
-		&v1.Event{},
+		&v1.Pod{},
 		0,
 		eventHandler,
 	)
