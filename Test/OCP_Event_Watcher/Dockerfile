@@ -12,6 +12,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
 
 FROM alpine:latest
 
+RUN apk --no-cache add -U tzdata
 RUN adduser -u 185 -G root -h /home/go -s /sbin/nologin -D go && \
     mkdir -p /app/main
 
