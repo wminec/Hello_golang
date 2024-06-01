@@ -75,14 +75,6 @@ func main() {
 	// Define a function to handle events
 	eventHandler := cache.ResourceEventHandlerFuncs{
 		AddFunc: handleEvent,
-		UpdateFunc: func(oldObj, newObj interface{}) {
-			oldEvent, ok1 := oldObj.(*v1.Event)
-			newEvent, ok2 := newObj.(*v1.Event)
-			if ok1 && ok2 && oldEvent.Message != newEvent.Message {
-				handleEvent(newObj)
-			}
-		},
-		DeleteFunc: handleEvent,
 	}
 
 	// Create a new shared informer for events
