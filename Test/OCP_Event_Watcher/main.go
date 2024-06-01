@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-var startTime = time.Now()
+var startTime time.Time
 
 // handleEvent는 Kubernetes 이벤트를 처리하고 출력합니다.
 func handleEvent(obj interface{}) {
@@ -29,7 +29,7 @@ func handleEvent(obj interface{}) {
 		return
 	}
 	if event.CreationTimestamp.Time.After(startTime) {
-		fmt.Printf("Event: %s %s %s\n", event.InvolvedObject.Kind, event.InvolvedObject.Name, event.Message)
+		fmt.Printf("Event: %s %s %s %s\n", event.CreationTimestamp, event.InvolvedObject.Kind, event.InvolvedObject.Name, event.Message)
 	}
 }
 
@@ -64,7 +64,7 @@ func main() {
 		namespace = "default"
 	}
 
-	// Event watcher
+	// Create a new event watchlist for watching events in the specified namespace
 	watchlist := cache.NewListWatchFromClient(
 		clientset.CoreV1().RESTClient(),
 		"events",
@@ -72,12 +72,20 @@ func main() {
 		fields.Everything(),
 	)
 
+	// Define a function to handle events
 	eventHandler := cache.ResourceEventHandlerFuncs{
-		AddFunc:    handleEvent,
-		UpdateFunc: func(oldObj, newObj interface{}) { handleEvent(newObj) },
+		AddFunc: handleEvent,
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldEvent, ok1 := oldObj.(*v1.Event)
+			newEvent, ok2 := newObj.(*v1.Event)
+			if ok1 && ok2 && oldEvent.Message != newEvent.Message {
+				handleEvent(newObj)
+			}
+		},
 		DeleteFunc: handleEvent,
 	}
 
+	// Create a new shared informer for events
 	_, controller := cache.NewInformer(
 		watchlist,
 		&v1.Event{},
@@ -88,7 +96,11 @@ func main() {
 	stop := make(chan struct{})
 	defer close(stop)
 
-	go controller.Run(stop)
+	go func() {
+		controller.Run(stop)
+		// Set the start time after the controller has started running
+		startTime = time.Now()
+	}()
 
 	// Handle graceful shutdown
 	sigterm := make(chan os.Signal, 1)
