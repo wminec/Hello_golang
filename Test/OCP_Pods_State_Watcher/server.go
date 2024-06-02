@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"syscall"
 	"time"
@@ -103,8 +104,14 @@ func main() {
 	}
 
 	eventHandler := cache.ResourceEventHandlerFuncs{
-		AddFunc:    handlePodEvent,
-		UpdateFunc: func(oldObj, newObj interface{}) { handlePodEvent(newObj) },
+		AddFunc: handlePodEvent,
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldPod, ok1 := oldObj.(*v1.Pod)
+			newPod, ok2 := newObj.(*v1.Pod)
+			if ok1 && ok2 && !reflect.DeepEqual(oldPod.Status, newPod.Status) {
+				handlePodEvent(newObj)
+			}
+		},
 	}
 
 	_, controller := cache.NewInformer(
