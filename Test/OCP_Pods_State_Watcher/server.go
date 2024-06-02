@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
@@ -8,10 +9,12 @@ import (
 	"os/signal"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	"gopkg.in/gomail.v2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -26,15 +29,53 @@ import (
 
 var startTime time.Time
 
+func sendEmail(message string) {
+	// 환경 변수에서 이메일 설정을 읽습니다.
+	subject := os.Getenv("EMAIL_SUBJECT")
+	from := os.Getenv("EMAIL_FROM")
+	to := os.Getenv("EMAIL_TO")
+	smtpServer := os.Getenv("SMTP_SERVER")
+	smtpPort := os.Getenv("SMTP_PORT")
+	smtpUser := os.Getenv("SMTP_USER")
+	smtpPassword := os.Getenv("SMTP_PASSWORD")
+	tlsSkipVerify := os.Getenv("TLS_SKIP_VERIFY")
+
+	port, err := strconv.Atoi(smtpPort)
+	if err != nil {
+		log.Fatalf("Invalid SMTP port: %v", err)
+	}
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", from)
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/plain", message)
+
+	d := gomail.NewDialer(smtpServer, port, smtpUser, smtpPassword)
+	if tlsSkipVerify == "true" {
+		d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+
+	if err := d.DialAndSend(m); err != nil {
+		log.Println("Failed to send email:", err)
+		return
+	}
+}
+
 // handlePodEvent는 Pod 이벤트를 처리하고 상태를 출력합니다.
 func handlePodEvent(obj interface{}) {
+	email := os.Getenv("EMAIL")
 	pod, ok := obj.(*v1.Pod)
 	if !ok {
 		log.Println("Error casting to Pod")
 		return
 	}
 	if pod.CreationTimestamp.Time.After(startTime) && (pod.Status.Phase == v1.PodFailed || pod.Status.Phase == v1.PodSucceeded || pod.Status.Phase == v1.PodRunning) {
-		fmt.Printf("%s %s, %s\n", pod.Status.StartTime, pod.Name, pod.Status.Phase)
+		message := fmt.Sprintf("%s : Pod %s in namespace %s has entered %s state", pod.Status.StartTime, pod.Name, pod.Namespace, pod.Status.Phase)
+		fmt.Printf("%s\n", message)
+		if email == "true" {
+			sendEmail(message)
+		}
 	}
 }
 
