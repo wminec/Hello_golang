@@ -37,7 +37,7 @@ func main() {
 	// In-cluster configuration
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.Printf("Error creating in-cluster config: %v\n", erree)
+		log.Printf("Error creating in-cluster config: %v\n", err)
 
 		// Local configuration for testing
 		var kubeconfig *string
