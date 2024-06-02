@@ -90,6 +90,8 @@ func main() {
 			selector = selector.Add(*req)
 		}
 
+		fmt.Printf("Selector: %s\n", selector.String())
+
 		watchlist = cache.NewFilteredListWatchFromClient(
 			clientset.CoreV1().RESTClient(),
 			"pods",
