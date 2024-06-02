@@ -104,10 +104,10 @@ func main() {
 	}
 
 	eventHandler := cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			fmt.Printf("Add: %v\n", obj)
-			handlePodEvent(obj)
-		},
+		//AddFunc: func(obj interface{}) {
+		//	fmt.Printf("Add: %v\n", obj)
+		//	handlePodEvent(obj)
+		//},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			oldPod, ok1 := oldObj.(*v1.Pod)
 			newPod, ok2 := newObj.(*v1.Pod)
