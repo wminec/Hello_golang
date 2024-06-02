@@ -104,10 +104,14 @@ func main() {
 	}
 
 	eventHandler := cache.ResourceEventHandlerFuncs{
-		AddFunc: handlePodEvent,
+		AddFunc: func(obj interface{}) {
+			fmt.Printf("Add: %v\n", obj)
+			handlePodEvent(obj)
+		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			oldPod, ok1 := oldObj.(*v1.Pod)
 			newPod, ok2 := newObj.(*v1.Pod)
+			fmt.Printf("Update: %v %v\n", oldPod.Status, newPod.Status)
 			if ok1 && ok2 && !reflect.DeepEqual(oldPod.Status, newPod.Status) {
 				handlePodEvent(newObj)
 			}
