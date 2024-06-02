@@ -69,6 +69,8 @@ func main() {
 		log.Fatalf("NAMESPACE environment variable not set")
 	}
 
+	debug := os.Getenv("DEBUG")
+
 	labelKeys := os.Getenv("LABEL_KEYS")
 
 	watchlists := make([]cache.ListerWatcher, 0)
@@ -111,7 +113,9 @@ func main() {
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			oldPod, ok1 := oldObj.(*v1.Pod)
 			newPod, ok2 := newObj.(*v1.Pod)
-			fmt.Printf("Update: %v %v\n", oldPod.Status.Phase, newPod.Status.Phase)
+			if debug == "true" {
+				fmt.Printf("Update: %v %v\n", oldPod.Status.Phase, newPod.Status.Phase)
+			}
 			if ok1 && ok2 && !reflect.DeepEqual(oldPod.Status.Phase, newPod.Status.Phase) {
 				handlePodEvent(newObj)
 			}
