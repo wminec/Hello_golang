@@ -90,7 +90,7 @@ func main() {
 			}
 			selector := labels.NewSelector().Add(*req)
 
-			fmt.Printf("Selector: %s\n", selector.String())
+			//fmt.Printf("Selector: %s\n", selector.String())
 
 			watchlists = append(watchlists, cache.NewFilteredListWatchFromClient(
 				clientset.CoreV1().RESTClient(),
@@ -130,11 +130,16 @@ func main() {
 			eventHandler,
 		)
 
-		go func() {
+		go func(w cache.ListerWatcher) {
 			startTime = time.Now()
-			fmt.Printf("Start time: %s\n", startTime)
+			listOptions := metav1.ListOptions{}
+			_, err := w.(*cache.ListWatch).ListFunc(listOptions)
+			if err != nil {
+				log.Fatalf("Failed to get list options: %v", err)
+			}
+			fmt.Printf("Start time: %s, Selector: %s\n", startTime, listOptions.LabelSelector)
 			controller.Run(stop)
-		}()
+		}(watchlist)
 	}
 
 	// Handle graceful shutdown
