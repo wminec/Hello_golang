@@ -71,36 +71,36 @@ func main() {
 
 	labelKeys := os.Getenv("LABEL_KEYS")
 
-	var watchlist cache.ListerWatcher
+	watchlists := make([]cache.ListerWatcher, 0)
+
 	if labelKeys == "" {
-		watchlist = cache.NewListWatchFromClient(
+		watchlists = append(watchlists, cache.NewListWatchFromClient(
 			clientset.CoreV1().RESTClient(),
 			"pods",
 			namespace,
 			fields.Everything(),
-		)
+		))
 	} else {
 		keys := strings.Split(labelKeys, ",")
 
-		selector := labels.NewSelector()
 		for _, key := range keys {
 			req, err := labels.NewRequirement(key, selection.Exists, nil)
 			if err != nil {
 				log.Fatalf("Failed to create requirement: %v", err)
 			}
-			selector = selector.Add(*req)
+			selector := labels.NewSelector().Add(*req)
+
+			fmt.Printf("Selector: %s\n", selector.String())
+
+			watchlists = append(watchlists, cache.NewFilteredListWatchFromClient(
+				clientset.CoreV1().RESTClient(),
+				"pods",
+				namespace,
+				func(options *metav1.ListOptions) {
+					options.LabelSelector = selector.String()
+				},
+			))
 		}
-
-		fmt.Printf("Selector: %s\n", selector.String())
-
-		watchlist = cache.NewFilteredListWatchFromClient(
-			clientset.CoreV1().RESTClient(),
-			"pods",
-			namespace,
-			func(options *metav1.ListOptions) {
-				options.LabelSelector = selector.String()
-			},
-		)
 	}
 
 	eventHandler := cache.ResourceEventHandlerFuncs{
@@ -118,24 +118,30 @@ func main() {
 		},
 	}
 
-	_, controller := cache.NewInformer(
-		watchlist,
-		&v1.Pod{},
-		0,
-		eventHandler,
-	)
-
 	stop := make(chan struct{})
 	defer close(stop)
 
-	go func() {
-		startTime = time.Now()
-		fmt.Printf("Start time: %s\n", startTime)
-		controller.Run(stop)
-	}()
+	for _, watchlist := range watchlists {
+		// Create and start informer for each watchlist
+		_, controller := cache.NewInformer(
+			watchlist,
+			&v1.Pod{},
+			0,
+			eventHandler,
+		)
+
+		go func() {
+			startTime = time.Now()
+			fmt.Printf("Start time: %s\n", startTime)
+			controller.Run(stop)
+		}()
+	}
 
 	// Handle graceful shutdown
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
+
 	<-sigterm
+	fmt.Println("Received a termination signal, stopping all informers...")
+	close(stop) // This will stop all informers
 }
