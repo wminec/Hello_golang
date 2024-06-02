@@ -31,7 +31,6 @@ var startTime time.Time
 
 func sendEmail(message string) {
 	// 환경 변수에서 이메일 설정을 읽습니다.
-	subject := os.Getenv("EMAIL_SUBJECT")
 	from := os.Getenv("EMAIL_FROM")
 	to := os.Getenv("EMAIL_TO")
 	smtpServer := os.Getenv("SMTP_SERVER")
@@ -39,6 +38,8 @@ func sendEmail(message string) {
 	smtpUser := os.Getenv("SMTP_USER")
 	smtpPassword := os.Getenv("SMTP_PASSWORD")
 	tlsSkipVerify := os.Getenv("TLS_SKIP_VERIFY")
+
+	debug := os.Getenv("DEBUG")
 
 	port, err := strconv.Atoi(smtpPort)
 	if err != nil {
@@ -48,7 +49,7 @@ func sendEmail(message string) {
 	m := gomail.NewMessage()
 	m.SetHeader("From", from)
 	m.SetHeader("To", to)
-	m.SetHeader("Subject", subject)
+	m.SetHeader("Subject", message)
 	m.SetBody("text/plain", message)
 
 	d := gomail.NewDialer(smtpServer, port, smtpUser, smtpPassword)
@@ -59,6 +60,9 @@ func sendEmail(message string) {
 	if err := d.DialAndSend(m); err != nil {
 		log.Println("Failed to send email:", err)
 		return
+	}
+	if debug == "true" {
+		log.Printf("Email sent successfully: %s\n", message)
 	}
 }
 
@@ -147,10 +151,6 @@ func main() {
 	}
 
 	eventHandler := cache.ResourceEventHandlerFuncs{
-		//AddFunc: func(obj interface{}) {
-		//	fmt.Printf("Add: %v\n", obj)
-		//	handlePodEvent(obj)
-		//},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			oldPod, ok1 := oldObj.(*v1.Pod)
 			newPod, ok2 := newObj.(*v1.Pod)
