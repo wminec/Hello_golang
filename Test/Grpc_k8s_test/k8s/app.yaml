@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+spec:
+  ports:
+  - port: 50051
+    targetPort: 50051
+  selector:
+    app: grpc-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: client
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: grpc-client
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-server
+  template:
+    metadata:
+      labels:
+        app: grpc-server
+    spec:
+      containers:
+      - name: grpc-server
+        image: docker.io/sye010/go-grpc-server-test:v0.1
+        ports:
+        - containerPort: 50051
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-client
+  template:
+    metadata:
+      labels:
+        app: grpc-client
+    spec:
+      containers:
+      - name: grpc-client
+        image: docker.io/sye010/go-grpc-client-test:v0.1
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SERVER
+          value: server
+        - name: PORT
+          value: "50051"
