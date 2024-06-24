@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"testing"
 
 	"golang.org/x/sync/errgroup"
 )
 
 func TestRun(t *testing.T) {
+	// 0 : 임의의 포트를 사용한다.
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("failed to listen port %v", err)
@@ -24,6 +26,8 @@ func TestRun(t *testing.T) {
 	in := "message"
 	url := fmt.Sprintf("http://%s/%s", l.Addr().String(), in)
 	//rsp, err := http.Get("http://localhost:18080/" + in)
+	t.Logf("try request to %q", url)
+	rsp, err := http.Get(url)
 	if err != nil {
 		t.Errorf("failed to get: %+v", err)
 	}
